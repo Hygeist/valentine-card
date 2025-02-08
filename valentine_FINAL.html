@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Valentine's Day Card</title>
+  <style>
+    /* --- Basic Reset / Sizing --- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #fbe8ef; /* Light pink background */
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    /* --- Container for the card --- */
+    .card-container {
+      position: relative;
+      width: 600px;
+      height: 500px;
+      background: #fff;
+      border: 2px solid #ff9dbc;
+      border-radius: 10px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    /* --- Envelope Container --- */
+    .envelope-container {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 180px;
+      perspective: 1000px;
+    }
+
+    /* Envelope "Back" part */
+    .envelope-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 300px;
+      height: 180px;
+      z-index: 1;
+    }
+
+    /* The letter (PNG) hidden behind the front initially */
+    .letter {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      width: 250px;
+      /* Center scale transformations around its middle so it doesn't shift. */
+      transform-origin: center center;
+      transform: translate(-50%, 0);
+      z-index: 2; 
+      opacity: 0; 
+      pointer-events: none; 
+      transition: transform 0.6s ease, opacity 0.6s ease;
+    }
+
+    /*
+      The "detailed letter" overlay:
+      - Placed near the top of .letter so it doesn't cover the buttons at the bottom.
+      - A cursive-esque font, thicker pink border, subtle pinkish shadow,
+        and the #EEDD94 background color.
+    */
+    .letter-detail {
+      position: absolute;
+      top: 10px;
+      left: 25px;
+      right: 10px;
+      width: 200px;
+      bottom: 60px; 
+      overflow-y: auto;
+
+      font-family: 'Brush Script MT', 'Lucida Handwriting', sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+      background: #EEDD94; 
+      border: 3px solid #ff9dbc; 
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(255, 157, 188, 0.5); 
+      
+      display: none;  
+      opacity: 0;     
+      transition: opacity 0.6s ease;
+      z-index: 2;     
+      padding: 15px;
+    }
+
+    .letter-detail p {
+      margin-bottom: 0.75em;
+    }
+
+    /* Envelope "Front" part */
+    .envelope-front {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 300px;
+      height: 180px;
+      z-index: 3;
+    }
+
+    /* Envelope "Flap" part */
+    .envelope-flap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 300px;
+      height: 150px; 
+      transform-origin: top center;
+      transition: transform 0.8s ease; 
+      z-index: 4;
+      cursor: pointer;
+    }
+
+    /* Slight tilt on hover if not opened */
+    .envelope-container:hover .envelope-flap:not(.opened) {
+      transform: rotateX(20deg);
+    }
+
+    /* The Yes/No buttons - above the letter-detail overlay */
+    .letter-options {
+      position: absolute;
+      bottom: 15px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      z-index: 3; 
+    }
+    .letter-options button {
+      padding: 5px 10px;
+      background: #ff5277;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      margin: 0 5px;
+      transition: transform 0.2s ease;
+      position: relative;
+    }
+    .letter-options button:hover {
+      background: #ff8ca7;
+    }
+
+    /* Pink text at the bottom of the card */
+    .valentine-text {
+      position: absolute;
+      bottom: 50px;
+      width: 100%;
+      text-align: center;
+      font-size: 30px;
+      color: #ff5277;
+      font-family: "Trebuchet MS", sans-serif;
+    }
+
+    /* Character in bottom-right corner */
+    .character-container {
+      position: absolute;
+      bottom: 30px;
+      right: 20px;
+      text-align: center;
+    }
+    .character-container img {
+      width: 80px; 
+      margin: 0 auto 8px;
+      transition: transform 0.4s ease;
+    }
+
+    /* --- We place the Mute/Reset buttons in absolute positions so they don't shift layout. --- */
+    .reset-button {
+      position: absolute;
+      bottom: 10px;
+      right: 100px;
+      padding: 6px 12px;
+      background: #ff5277;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .reset-button:hover {
+      background: #ff8ca7;
+    }
+
+    .mute-button {
+      position: absolute;
+      bottom: 10px;
+      right: 20px;
+      padding: 6px 12px;
+      background: #ff5277;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .mute-button:hover {
+      background: #ff8ca7;
+    }
+
+    /* Hearts that float out of the envelope */
+    .heart {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      pointer-events: none;
+      animation: floatHearts 2.5s linear forwards;
+      opacity: 0;
+      transform-origin: center center; /* to scale from center if random size */
+    }
+    @keyframes floatHearts {
+      0% {
+        transform: translateY(0) scale(0.8);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-200px) scale(1.2);
+        opacity: 0;
+      }
+    }
+
+    /* >>> Popup/Overlay for "Yes" or "No" <<< */
+    .popup {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      padding: 20px 30px;
+      background: #ffffff;
+      border: 3px solid #ff9dbc;
+      border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(255, 82, 119, 0.3);
+      font-size: 18px;
+      color: #ff5277;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+      z-index: 999; 
+      text-align: center;
+    }
+    .popup.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* >>> Burn animation for "No" <<< */
+    .burning {
+      animation: burnEffect 5s forwards ease-in-out;
+      pointer-events: none; /* can't click once it's burning */
+    }
+    @keyframes burnEffect {
+      0% {
+        transform: translate(-50%, 0) scale(1);
+        filter: none;
+        opacity: 1;
+      }
+      50% {
+        filter: brightness(0.8) sepia(0.3);
+      }
+      100% {
+        transform: translate(-50%, 0) scale(0.7);
+        filter: brightness(0) sepia(1);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card-container">
+    
+    <!-- Envelope Container -->
+    <div class="envelope-container">
+      <!-- Envelope Back -->
+      <img src="images/envelope-back.png" class="envelope-back" alt="Envelope Back" />
+
+      <!-- The Letter (PNG) -->
+      <div class="letter" id="letter">
+        <img src="images/letter.png" alt="Letter" style="width: 100%;" />
+
+        <!-- The shortened 'detailed letter' text overlay -->
+        <div class="letter-detail" id="letterDetail">
+          <p>Dear Nada,</p>
+          <p>
+            I've loved spending time with you these past week. You've made my day brighter,
+            and I feel really at home in your company. I've realized I have feelings for you
+            that go beyond just friendship.
+          </p>
+          <p>
+            With Valentine’s Day coming up, I wanted to be honest about these feelings
+            and see where you're at too. I'd love to spend Feburary 14th with you! <3
+          </p>
+          <p>
+            I'd love to know what you think. No pressure. Just hoping to spend a lovely day with you.
+          </p>
+        </div>
+
+        <!-- Yes/No buttons -->
+        <div class="letter-options">
+          <button onclick="showHappy(event)">Yes</button>
+          <button id="noButton" onclick="showSad(event)">No</button>
+        </div>
+      </div>
+
+      <!-- Envelope Front -->
+      <img src="images/envelope-front.png" class="envelope-front" alt="Envelope Front" />
+
+      <!-- The Flap -->
+      <img 
+        src="images/envelope-flap.png" 
+        class="envelope-flap" 
+        alt="Envelope Flap" 
+        onclick="openEnvelope()"
+      />
+    </div>
+
+    <!-- Greeting Text -->
+    <h1 class="valentine-text">Happy Valentine's Day Nada!</h1>
+
+    <!-- Character -->
+    <div class="character-container">
+      <img id="character" src="images/character-default.png" alt="Character Default" />
+    </div>
+
+    <!-- Reset + Mute (fixed in bottom-right corner) -->
+    <button class="reset-button" onclick="resetCard()">Reset</button>
+    <button class="mute-button" id="muteBtn">Mute</button>
+
+    <!-- Popup for responses -->
+    <div class="popup" id="responsePopup"></div>
+  </div>
+
+  <!-- >>> Audio Elements <<< -->
+  <!--
+    Replace:
+     - 'sounds/letterOpen.mp3'
+     - 'sounds/bgMusic.mp3'
+     - 'sounds/paperBurn.mp3'
+     - 'sounds/letterHover.mp3'
+    with your actual file paths & names.
+  -->
+  <audio id="letterOpenSound" src="sounds/letterOpen.mp3" preload="auto"></audio>
+  <audio id="bgMusic" src="sounds/bgMusic.mp3" preload="auto" loop></audio>
+  <audio id="paperBurnSound" src="sounds/paperBurn.mp3" preload="auto"></audio>
+  <audio id="letterHoverSound" src="sounds/letterHover.mp3" preload="auto"></audio>
+
+  <script>
+    let envelopeOpened = false;
+    let isMuted = false; // track mute/unmute state
+    let yesHeartsInterval = null; // for continuous hearts on "Yes"
+
+    const flap = document.querySelector(".envelope-flap");
+    const letter = document.getElementById("letter");
+    const characterImg = document.getElementById("character");
+    const letterDetail = document.getElementById("letterDetail");
+    const noButton = document.getElementById("noButton");
+    const muteBtn = document.getElementById("muteBtn");
+    const responsePopup = document.getElementById("responsePopup");
+
+    // For the "No" button run-away effect
+    let noHoverCount = 0;
+
+    // Hearts
+    const heartImages = ["heart1.png", "heart2.png", "heart3.png"];
+
+    // Audio references
+    const letterOpenSound = document.getElementById("letterOpenSound");
+    const bgMusic = document.getElementById("bgMusic");
+    const paperBurnSound = document.getElementById("paperBurnSound");
+    const letterHoverSound = document.getElementById("letterHoverSound");
+
+    // BG Music volume to 20%
+    bgMusic.volume = 0.2;
+
+    // Play "hover" SFX when user hovers over flap (before letter is open)
+    flap.addEventListener("mouseenter", () => {
+      if (!envelopeOpened && !isMuted) {
+        letterHoverSound.currentTime = 0;
+        letterHoverSound.play().catch(err => console.log(err));
+      }
+    });
+
+    // Envelope open function
+    function openEnvelope() {
+      if (!envelopeOpened) {
+        envelopeOpened = true;
+        flap.classList.add("opened");
+
+        // Attempt to play sounds
+        if (!isMuted) {
+          letterOpenSound.currentTime = 0;
+          letterOpenSound.play().catch(err => console.log(err));
+          bgMusic.play().catch(err => console.log(err));
+        }
+
+        // Rotate flap open
+        flap.style.transform = "rotateX(-160deg) translateY(-10px)";
+
+        // After flap rotates, push it behind the letter
+        setTimeout(() => {
+          flap.style.zIndex = 1;
+        }, 800);
+
+        // Spawn hearts (7 total)
+        createHearts(7);
+
+        // Slide up letter after small delay
+        setTimeout(() => {
+          letter.style.transform = "translate(-50%, -80px)";
+          letter.style.opacity = "1";
+          letter.style.pointerEvents = "auto";
+
+          // Raise letter's z-index halfway
+          setTimeout(() => {
+            letter.style.zIndex = 5;
+          }, 300);
+
+          // Show the text overlay after 0.8s
+          setTimeout(() => {
+            letterDetail.style.display = "block";
+            letterDetail.style.opacity = "1";
+          }, 800);
+
+        }, 200);
+      }
+    }
+
+    // Hearts creation (with random size)
+    function createHearts(count) {
+      const container = document.querySelector(".card-container");
+      for (let i = 0; i < count; i++) {
+        const heart = document.createElement("img");
+        const randomIndex = Math.floor(Math.random() * heartImages.length);
+        heart.src = "images/" + heartImages[randomIndex];
+        heart.className = "heart";
+
+        // Random scale between 0.5 and 1.2
+        const scale = 0.5 + Math.random() * 0.7;
+        heart.style.transform = `scale(${scale})`;
+
+        // Spread them horizontally ±100 from center
+        const randomLeft = container.offsetWidth / 2 - 100 + Math.random() * 200;
+        heart.style.left = randomLeft + "px";
+
+        // Slight random vertical offset
+        const randomTop = container.offsetHeight / 2 - 40 + getRandomOffset();
+        heart.style.top = randomTop + "px";
+
+        container.appendChild(heart);
+        heart.addEventListener("animationend", () => heart.remove());
+      }
+    }
+
+    function getRandomOffset() {
+      return Math.floor(Math.random() * 61) - 30;
+    }
+
+    // Show "Yes" effect
+    function showHappy(event) {
+      event.stopPropagation();
+      characterImg.src = "images/character-happy.png";
+      characterImg.style.transform = "scale(1)";
+
+      // Start continuous hearts every second until reset
+      yesHeartsInterval = setInterval(() => {
+        createHearts(3);
+      }, 1000);
+
+      // Popup
+      showResponsePopup("See you soon 🥰!");
+    }
+
+    // Show "No" effect (burn letter)
+    function showSad(event) {
+      event.stopPropagation();
+
+      // If not muted, play burn SFX once
+      if (!isMuted) {
+        paperBurnSound.currentTime = 0;
+        paperBurnSound.play().catch(err => console.log(err));
+      }
+
+      // Add "burning" class so it slowly burns away in place
+      letter.classList.add("burning");
+      // Also remove pointer events from the detail, just in case
+      letterDetail.style.pointerEvents = "none";
+
+      // After ~5s, hide the letter entirely (once burn completes)
+      setTimeout(() => {
+        letter.style.display = "none";
+      }, 5000);
+
+      // Character changes to sad
+      characterImg.src = "images/character-sad.png";
+      characterImg.style.transform = "scale(1.3)";
+      setTimeout(() => {
+        characterImg.style.transform = "scale(1.4)";
+        setTimeout(() => {
+          characterImg.style.transform = "scale(1.3)";
+        }, 200);
+      }, 50);
+
+      // Popup
+      showResponsePopup("No problem 😔");
+    }
+
+    // "No" button 'run away' on hover for the first 3 times
+    noButton.addEventListener("mouseover", function() {
+      if (!envelopeOpened) return; 
+      if (noHoverCount < 3) {
+        noHoverCount++;
+        const randX = Math.floor(Math.random() * 100) - 50; 
+        const randY = Math.floor(Math.random() * 40) - 20;
+        noButton.style.transform = `translate(${randX}px, ${randY}px)`;
+      }
+    });
+
+    // Popup for Yes/No response
+    function showResponsePopup(message) {
+      responsePopup.textContent = message;
+      responsePopup.classList.add("show");
+      // Hide after a couple seconds
+      setTimeout(() => {
+        responsePopup.classList.remove("show");
+      }, 2500);
+    }
+
+    // Reset everything
+    function resetCard() {
+      envelopeOpened = false;
+      noHoverCount = 0;
+
+      // Stop continuous hearts from "Yes"
+      if (yesHeartsInterval) {
+        clearInterval(yesHeartsInterval);
+        yesHeartsInterval = null;
+      }
+
+      flap.classList.remove("opened");
+      flap.style.transform = "rotateX(0)";
+      flap.style.zIndex = 4; 
+      flap.offsetHeight; // reflow
+
+      // Restore letter
+      letter.classList.remove("burning");
+      letter.style.display = "";    // remove display:none if was burned
+      letter.style.transform = "translate(-50%, 0)"; 
+      letter.style.opacity = "0";
+      letter.style.pointerEvents = "none";
+      letter.style.zIndex = 2;
+      letterDetail.style.display = "none";
+      letterDetail.style.opacity = "0";
+      letterDetail.style.pointerEvents = "auto";
+
+      // Remove all hearts
+      document.querySelectorAll(".heart").forEach((heart) => heart.remove());
+
+      // Reset character
+      characterImg.src = "images/character-default.png";
+      characterImg.style.transform = "scale(1)";
+
+      // Reset No button
+      noButton.style.transform = "translate(0,0)";
+
+      // Reset popup
+      responsePopup.classList.remove("show");
+    }
+
+    // Toggle mute/unmute
+    muteBtn.addEventListener("click", () => {
+      isMuted = !isMuted;
+      muteBtn.textContent = isMuted ? "Unmute" : "Mute";
+
+      if (isMuted) {
+        bgMusic.pause();
+        letterHoverSound.pause();
+        paperBurnSound.pause();
+      } else {
+        // Attempt to play if envelope is opened or user has interacted
+        if (envelopeOpened) {
+          bgMusic.play().catch(err => console.log(err));
+        }
+      }
+    });
+  </script>
+</body>
+</html>
